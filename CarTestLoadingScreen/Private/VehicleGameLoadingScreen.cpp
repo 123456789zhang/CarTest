@@ -102,7 +102,7 @@ public:
 	{
 		FLoadingScreenAttributes LoadingScreen;
 		LoadingScreen.bAutoCompleteWhenLoadingCompletes = true;
-		LoadingScreen.WidgetLoadingScreen = NULL;
+		LoadingScreen.WidgetLoadingScreen = SNew(SVehicleLoadingScreen);
 		GetMoviePlayer()->SetupLoadingScreen(LoadingScreen);
 	}
 };

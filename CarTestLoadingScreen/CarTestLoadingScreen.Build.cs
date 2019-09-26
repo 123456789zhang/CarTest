@@ -13,7 +13,7 @@ public class CarTestLoadingScreen: ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  "InputCore" ,"MoviePlayer"});
+		PrivateDependencyModuleNames.AddRange(new string[] {  "InputCore" ,"MoviePlayer","SlateCore" , "Slate"});
 
 	}
 }

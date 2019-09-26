@@ -18,7 +18,20 @@ public:
 
 	AVehicleGameMode();
 
-	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
+	/** 检查游戏是否是活跃的 */
+	bool IsRaceActive() const;
+
+protected:
+
+	/** 比赛开始时间戳 */
+	float RaceStartTime;
+
+	/** 比赛结束时间戳 */
+	float RaceFinishTime;
+
+	/** 玩家锁定是否激活? */
+	bool bLockingActive;
 	
 };
