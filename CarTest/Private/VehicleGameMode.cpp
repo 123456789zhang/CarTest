@@ -4,6 +4,7 @@
 #include "Engine/Engine.h"
 #include "VehicleGameState.h"
 #include "Engine/GameViewportClient.h"
+#include "VH_BuggyPawn.h"
 
 
 AVehicleGameMode::AVehicleGameMode()
@@ -13,6 +14,7 @@ AVehicleGameMode::AVehicleGameMode()
 	bLockingActive = false;
 
 	GameStateClass = AVehicleGameState::StaticClass();
+	DefaultPawnClass = AVH_BuggyPawn::StaticClass();
 	if ((GEngine != nullptr) && (GEngine->GameViewport != nullptr))
 	{
 		GEngine->GameViewport->SetSuppressTransitionMessage(true);
