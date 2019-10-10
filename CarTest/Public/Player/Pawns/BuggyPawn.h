@@ -32,11 +32,14 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	//结束Pawn的方法覆盖
 
-private:
+protected:
 
 	/* 车的方向移动 */
-	void MoveForward(float Val);
+	virtual void MoveForward(float Val);
 	void MoveRight(float Val);
+
+	virtual void OnHandbrakePressed();
+	virtual void OnHandbrakeReleased();
 
 protected:
 
@@ -104,5 +107,7 @@ public:
 	class USpringArmComponent* GetSpringArm() const { return SpringArm; }
 
 	class UCameraComponent* GetCamera() const { return Camera; }
+
+	class UAudioComponent* GetEngineAC() const { return EngineAC; }
 	
 };

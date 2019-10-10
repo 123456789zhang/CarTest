@@ -19,10 +19,46 @@ public:
 
 	AVH_BuggyPawn();
 
+	virtual void BeginPlay() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void Tick(float DeltaSeconds) override;
+
+	UFUNCTION()
+	void EngineSoundStart(int32 EntryPoint);
+
+	UFUNCTION()
+	void EnableCarInput(int32 EntryPoint);
+
+protected:
+
+	virtual void MoveForward(float Val) override;
+
+	virtual void OnHandbrakePressed() override;
+	virtual void OnHandbrakeReleased() override;
+
+	void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+private:
+
+	void ChangeBrakesSettings(float val);
+
+public:
+
+	UPROPERTY(Category = Default, BlueprintReadWrite)
+		UMaterialInstanceDynamic* DMI;
+
+	/** 刹车键是否按住 */
+	UPROPERTY(Category = Default, BlueprintReadWrite)
+		bool bHandBrakePressed;
+
+	/**  */
+	UPROPERTY(Category = Default, BlueprintReadWrite)
+		bool bStuck;
+
 protected:
 
 	UPROPERTY(Category = Effects, EditDefaultsOnly)
-		USoundCue* TireSound;
+	USoundCue* TireSound;
 
 private:
 
@@ -30,6 +66,6 @@ private:
 	UBoxComponent* Box;
 
 	UPROPERTY(Category = Default, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-		UAudioComponent* TireRolling;
+	UAudioComponent* TireRolling;
 	
 };

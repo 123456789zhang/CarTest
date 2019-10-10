@@ -11,6 +11,14 @@
 #include "WheeledVehicleMovementComponent4W.h"
 #include "VHBuggyWheelFront.h"
 #include "Components/AudioComponent.h"
+#include "VHBuggyWheelBack.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "Sound/SoundCue.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "VHPlayerController.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AVH_BuggyPawn::AVH_BuggyPawn()
 {
@@ -21,6 +29,13 @@ AVH_BuggyPawn::AVH_BuggyPawn()
 		GetMesh()->SetSkeletalMesh(StaticCarMesh.Object);
 	}
 
+	static ConstructorHelpers::FClassFinder<UAnimInstance> StaticAnim(TEXT("AnimBlueprint'/Game/Vehicles/Blurpint/VH_BuggyAnimBP.VH_BuggyAnimBP_C'"));
+
+	if (StaticAnim.Class != NULL)
+	{
+		GetMesh()->SetAnimInstanceClass(StaticAnim.Class);
+	}
+
 	GetMesh()->SetCollisionProfileName(TEXT("Vehicle"));
 
 	GetSpringArm()->TargetArmLength = 875.0f;
@@ -29,7 +44,7 @@ AVH_BuggyPawn::AVH_BuggyPawn()
 	GetSpringArm()->ProbeSize = 40.0f;
 
 	GetCamera()->FieldOfView = 110.0f;
-	GetCamera()->SetConstraintAspectRatio(false);
+	GetCamera()->SetConstraintAspectRatio(true);
 
 	TireRolling = CreateDefaultSubobject<UAudioComponent>(TEXT("TireRolling"));
 	TireRolling->bAutoActivate = false;
@@ -41,6 +56,13 @@ AVH_BuggyPawn::AVH_BuggyPawn()
 	Box->BodyInstance.bEnableGravity = false;
 	Box->BodyInstance.SetMassOverride(0.001f);
 	Box->SetCollisionProfileName(FName(TEXT("Vehicle")));
+		
+	FScriptDelegate Delegate;
+
+	Delegate.BindUFunction(this, FName(TEXT("OnComponentBeginOverlap")));
+	FComponentBeginOverlapSignature BeginOverlap;
+	BeginOverlap.AddUnique(Delegate);
+	Box->OnComponentBeginOverlap = BeginOverlap;
 	Box->SetupAttachment(RootComponent);
 
 	auto VehicleMovement4W = Cast<UWheeledVehicleMovementComponent4W>(GetVehicleMovementComponent());
@@ -107,16 +129,109 @@ AVH_BuggyPawn::AVH_BuggyPawn()
 
 		auto& WheelThree = VehicleMovement4W->WheelSetups[2];
 		WheelThree.BoneName = FName(TEXT("B_L_wheelJNT"));
-		WheelThree.WheelClass = UVHBuggyWheelFront::StaticClass();
+		WheelThree.WheelClass = UVHBuggyWheelBack::StaticClass();
 		WheelThree.AdditionalOffset = FVector(0.0f, 45.0f, 0.0f);
 
 		auto& WheelFour = VehicleMovement4W->WheelSetups[3];
 		WheelFour.BoneName = FName(TEXT("B_R_wheelJNT"));
-		WheelFour.WheelClass = UVHBuggyWheelFront::StaticClass();
+		WheelFour.WheelClass = UVHBuggyWheelBack::StaticClass();
 		WheelFour.AdditionalOffset = FVector(0.0f, -45.0f, 0.0f);
 
 		VehicleMovement4W->DragCoefficient = 0.0f;
 	}
 
+	bHandBrakePressed = false;
+}
 
+void AVH_BuggyPawn::BeginPlay()
+{
+	Super::BeginPlay();
+	DisableInput(nullptr);
+	UKismetSystemLibrary::Delay(this,0.2f, FLatentActionInfo(3,6523549,TEXT("EngineSoundStart"),this));
+}
+
+void AVH_BuggyPawn::OnConstruction(const FTransform & Transform)
+{
+	Super::OnConstruction(Transform);
+
+	DMI = GetMesh()->CreateDynamicMaterialInstance(0, GetMesh()->GetMaterial(0));
+}
+
+void AVH_BuggyPawn::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (FVector::DotProduct(GetActorUpVector(), FVector(0.0f, 0.0f, 1.0f)) < 0.5f &&
+		GetVehicleMovement()->GetForwardSpeed() < 0.5f)
+	{
+		bStuck = true;
+
+
+	}
+	else
+	{
+		bStuck = false;
+	}
+
+	GetEngineAC()->SetFloatParameter(FName(TEXT("RPM")), GetVehicleMovement()->GetEngineRotationSpeed());
+}
+
+void AVH_BuggyPawn::EngineSoundStart(int32 EntryPoint)
+{
+
+	USoundCue* Enginelgnite=LoadObject<USoundCue>(NULL, TEXT("/Game/Sounds/CarDriveModel/Mono/Enginelgnite_Cue.Enginelgnite_Cue"));
+
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), Enginelgnite, GetActorLocation());
+
+	UKismetSystemLibrary::Delay(this, 0.5f, FLatentActionInfo(1, 6521249, TEXT("EnableCarInput"), this));
+}
+
+void AVH_BuggyPawn::EnableCarInput(int32 EntryPoint)
+{
+	EnableInput(nullptr);
+}
+
+void AVH_BuggyPawn::MoveForward(float Val)
+{
+	Super::MoveForward(Val);
+
+	if (Val < 0.0f)
+	{
+		ChangeBrakesSettings(10);
+	}
+	else
+	{
+		if (bHandBrakePressed)
+		{
+			ChangeBrakesSettings(10);
+		}
+		else
+		{
+			ChangeBrakesSettings(0.1);
+		}
+	}
+}
+
+void AVH_BuggyPawn::OnHandbrakePressed()
+{
+	Super::OnHandbrakePressed();
+	bHandBrakePressed = true;
+}
+
+void AVH_BuggyPawn::OnHandbrakeReleased()
+{
+	Super::OnHandbrakeReleased();
+	bHandBrakePressed = false;
+}
+
+void AVH_BuggyPawn::OnComponentBeginOverlap(UPrimitiveComponent * OverlappedComponent, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+{
+	AVHPlayerController* Controller = Cast<AVHPlayerController>(GetController());
+	Controller->VHOverlapUpdate(OtherActor);
+}
+
+void AVH_BuggyPawn::ChangeBrakesSettings(float val)
+{
+	DMI->SetScalarParameterValue(FName(TEXT("Brake light power")), val);
+	DMI->SetVectorParameterValue(FName(TEXT("Brake light color")), FLinearColor(0.33f, 0.026f, 0.02f, 1.0f));
 }

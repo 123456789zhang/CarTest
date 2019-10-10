@@ -80,6 +80,9 @@ void ABuggyPawn::SetupPlayerInputComponent(UInputComponent * InputComponent)
 
 	InputComponent->BindAxis("MoveForward", this, &ABuggyPawn::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &ABuggyPawn::MoveRight);
+
+	InputComponent->BindAction("Handbrake", IE_Pressed, this, &ABuggyPawn::OnHandbrakePressed);
+	InputComponent->BindAction("Handbrake", IE_Released, this, &ABuggyPawn::OnHandbrakeReleased);
 }
 
 void ABuggyPawn::MoveForward(float Val)
@@ -104,4 +107,22 @@ void ABuggyPawn::MoveRight(float Val)
 	}
 
 	VehicleMovementComp->SetSteeringInput(Val);
+}
+
+void ABuggyPawn::OnHandbrakePressed()
+{
+	UWheeledVehicleMovementComponent* VehicleMovementComp = GetVehicleMovementComponent();
+	if (VehicleMovementComp != nullptr)
+	{
+		VehicleMovementComp->SetHandbrakeInput(true);
+	}
+}
+
+void ABuggyPawn::OnHandbrakeReleased()
+{
+	UWheeledVehicleMovementComponent* VehicleMovementComp = GetVehicleMovementComponent();
+	if (VehicleMovementComp != nullptr)
+	{
+		VehicleMovementComp->SetHandbrakeInput(false);
+	}
 }
