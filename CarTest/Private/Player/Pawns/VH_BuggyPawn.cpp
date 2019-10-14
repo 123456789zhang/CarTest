@@ -18,6 +18,7 @@
 #include "Sound/SoundCue.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "VHPlayerController.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 
 AVH_BuggyPawn::AVH_BuggyPawn()
@@ -36,6 +37,8 @@ AVH_BuggyPawn::AVH_BuggyPawn()
 		GetMesh()->SetAnimInstanceClass(StaticAnim.Class);
 	}
 
+
+
 	GetMesh()->SetCollisionProfileName(TEXT("Vehicle"));
 
 	GetSpringArm()->TargetArmLength = 875.0f;
@@ -49,6 +52,13 @@ AVH_BuggyPawn::AVH_BuggyPawn()
 	TireRolling = CreateDefaultSubobject<UAudioComponent>(TEXT("TireRolling"));
 	TireRolling->bAutoActivate = false;
 	TireRolling->SetupAttachment(GetMesh());
+
+	static ConstructorHelpers::FObjectFinder <USoundCue> StaticTireSound(TEXT("SoundCue'/Game/Sounds/CarPhysics/Mono/TiresRolling_Loop_Cue.TiresRolling_Loop_Cue'"));
+
+	if (StaticTireSound.Object != NULL)
+	{
+		TireRolling->SetSound(StaticTireSound.Object);
+	}
 
 	Box = CreateDefaultSubobject<UBoxComponent>(TEXT("Box"));
 	Box->SetRelativeLocation(FVector(60.0f, 0.0f, 190.0f));
@@ -155,6 +165,8 @@ void AVH_BuggyPawn::OnConstruction(const FTransform & Transform)
 	Super::OnConstruction(Transform);
 
 	DMI = GetMesh()->CreateDynamicMaterialInstance(0, GetMesh()->GetMaterial(0));
+
+	bVariable = false;
 }
 
 void AVH_BuggyPawn::Tick(float DeltaSeconds)
@@ -174,6 +186,24 @@ void AVH_BuggyPawn::Tick(float DeltaSeconds)
 	}
 
 	GetEngineAC()->SetFloatParameter(FName(TEXT("RPM")), GetVehicleMovement()->GetEngineRotationSpeed());
+
+	if (UKismetSystemLibrary::IsValid(GetVehicleMovement()))
+	{
+		float CarSpeedAbs= FMath::Abs(GetVehicleMovement()->GetEngineRotationSpeed() * 0.036);
+		
+		TireRolling->SetFloatParameter(FName(TEXT("Speed")), UKismetMathLibrary::NormalizeToRange(CarSpeedAbs, 10.0f, 200.0f));
+
+		if (CarSpeedAbs > 15.0)
+		{
+			DoOnce(1);
+		}
+		else
+		{
+			DoOnce(2);
+			TireRolling->FadeOut(2.0f, 0.0f);
+		}
+	}
+	
 }
 
 void AVH_BuggyPawn::EngineSoundStart(int32 EntryPoint)
@@ -234,4 +264,26 @@ void AVH_BuggyPawn::ChangeBrakesSettings(float val)
 {
 	DMI->SetScalarParameterValue(FName(TEXT("Brake light power")), val);
 	DMI->SetVectorParameterValue(FName(TEXT("Brake light color")), FLinearColor(0.33f, 0.026f, 0.02f, 1.0f));
+}
+
+void AVH_BuggyPawn::DoOnce(int8 val)
+{
+	switch (val)
+	{
+	case 1:
+		{
+			if (!bVariable)
+			{
+				TireRolling->Play();
+
+				bVariable = true;
+			}
+		}
+		break;
+	case 2:
+		{
+		bVariable = false;
+		}
+		break;
+	}
 }

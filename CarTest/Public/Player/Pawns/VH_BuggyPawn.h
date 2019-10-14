@@ -42,6 +42,8 @@ private:
 
 	void ChangeBrakesSettings(float val);
 
+	void DoOnce(int8 val);
+
 public:
 
 	UPROPERTY(Category = Default, BlueprintReadWrite)
@@ -55,11 +57,6 @@ public:
 	UPROPERTY(Category = Default, BlueprintReadWrite)
 		bool bStuck;
 
-protected:
-
-	UPROPERTY(Category = Effects, EditDefaultsOnly)
-	USoundCue* TireSound;
-
 private:
 
 	UPROPERTY(Category = Default, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -67,5 +64,8 @@ private:
 
 	UPROPERTY(Category = Default, VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UAudioComponent* TireRolling;
+
+	UPROPERTY()
+	bool bVariable;
 	
 };

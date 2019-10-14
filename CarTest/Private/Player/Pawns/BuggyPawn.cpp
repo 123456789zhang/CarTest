@@ -9,6 +9,9 @@
 #include "Components/InputComponent.h"
 #include "VehiclePlayerController.h"
 #include "WheeledVehicleMovementComponent.h"
+#include "CarTest.h"
+#include "Kismet/GameplayStatics.h"
+#include "UObject/ConstructorHelpers.h"
 
 ABuggyPawn::ABuggyPawn()
 {
@@ -55,6 +58,14 @@ ABuggyPawn::ABuggyPawn()
 	bTiresTouchingGround = false;
 
 	ImpactEffectNormalForceThreshold = 100000.f;
+
+	static ConstructorHelpers::FObjectFinder<USoundCue> StaticEngineSound(TEXT("SoundCue'/Game/Sounds/CarDriveModel/Mono/EngineModel_Loop_Cue.EngineModel_Loop_Cue'"));
+
+	if (StaticEngineSound.Object != NULL)
+	{
+		EngineSound = StaticEngineSound.Object;
+	}
+	
 }
 
 void ABuggyPawn::PostInitializeComponents()
@@ -83,6 +94,62 @@ void ABuggyPawn::SetupPlayerInputComponent(UInputComponent * InputComponent)
 
 	InputComponent->BindAction("Handbrake", IE_Pressed, this, &ABuggyPawn::OnHandbrakePressed);
 	InputComponent->BindAction("Handbrake", IE_Released, this, &ABuggyPawn::OnHandbrakeReleased);
+}
+
+void ABuggyPawn::Die()
+{
+	if (CanDie())
+	{
+		OnDeath();
+	}
+}
+
+void ABuggyPawn::OnRep_Dying()
+{
+	if (bIsDying == true)
+	{
+		OnDeath();
+	}
+}
+
+
+bool ABuggyPawn::CanDie() const
+{
+	if (bIsDying									//已经死亡
+		|| IsPendingKill()							//已经摧毁了
+		|| Role != ROLE_Authority)					//没有权威
+	{
+		return false;
+	}
+	return true;
+}
+
+void ABuggyPawn::OnDeath()
+{
+	AVehiclePlayerController* MyPC = Cast<AVehiclePlayerController>(GetController());
+	bReplicateMovement = false;
+	TearOff();
+	bIsDying = true;
+
+	DetachFromControllerPendingDestroy();
+
+	//隐藏和禁用
+	TurnOff();
+	SetActorHiddenInGame(true);
+
+	if (EngineAC)
+	{
+		EngineAC->Stop();
+	}
+
+	if (SkidAC)
+	{
+		SkidAC->Stop();
+	}
+
+	
+	//给使用有限的寿命
+	SetLifeSpan(0.2f);
 }
 
 void ABuggyPawn::MoveForward(float Val)
@@ -126,3 +193,24 @@ void ABuggyPawn::OnHandbrakeReleased()
 		VehicleMovementComp->SetHandbrakeInput(false);
 	}
 }
+
+void ABuggyPawn::PlayDestructionFX()
+{
+	if (DeathFX)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(this, DeathFX, GetActorLocation(), GetActorRotation());
+	}
+
+	if (DeathSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
+	}
+}
+
+void ABuggyPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABuggyPawn,bIsDying);
+}
+

@@ -22,6 +22,20 @@ public:
 
 	bool IsHandbrakeForced() const;
 
+	/** 在服务器上启动死亡 */
+	UFUNCTION(reliable, server, WithValidation)
+	void ServerSuicide();
+
+protected:
+
+	virtual void SetupInputComponent() override;
+
+	/** 切换游戏菜单 */
+	void OnToggleInGameMenu();
+
+	/** 自杀 */
+	void Suicide();
+
 protected:
 
 	/* 如果设置，手刹车将被强制 */

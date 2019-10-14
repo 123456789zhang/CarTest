@@ -5,7 +5,7 @@
 #include "VehicleGameState.h"
 #include "Engine/GameViewportClient.h"
 #include "VH_BuggyPawn.h"
-
+#include "VehiclePlayerController.h"
 
 AVehicleGameMode::AVehicleGameMode()
 {
@@ -15,6 +15,7 @@ AVehicleGameMode::AVehicleGameMode()
 
 	GameStateClass = AVehicleGameState::StaticClass();
 	DefaultPawnClass = AVH_BuggyPawn::StaticClass();
+	PlayerControllerClass = AVehiclePlayerController::StaticClass();
 	if ((GEngine != nullptr) && (GEngine->GameViewport != nullptr))
 	{
 		GEngine->GameViewport->SetSuppressTransitionMessage(true);

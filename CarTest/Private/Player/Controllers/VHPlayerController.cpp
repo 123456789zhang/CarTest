@@ -8,4 +8,5 @@ AVHPlayerController::AVHPlayerController()
 
 void AVHPlayerController::VHOverlapUpdate(AActor * Actor)
 {
+
 }

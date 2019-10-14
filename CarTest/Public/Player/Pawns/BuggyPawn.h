@@ -25,12 +25,21 @@ public:
 
 	//开始Actor的方法覆盖
 	virtual void PostInitializeComponents() override;
-
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//结束Actor的方法覆盖
 
 	//开始Pawn的方法覆盖
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	//结束Pawn的方法覆盖
+
+	/** 杀掉玩家.[服务端/仅授权] */
+	virtual void Die();
+
+	/** 如果该玩家在当前状态下死亡，则返回True */
+	virtual bool CanDie() const;
+
+	/** 在死亡事件[服务端/客户端] */
+	virtual void OnDeath();
 
 protected:
 
@@ -40,6 +49,19 @@ protected:
 
 	virtual void OnHandbrakePressed();
 	virtual void OnHandbrakeReleased();
+
+	/** 播放爆炸粒子和音频 */
+	void PlayDestructionFX();
+
+public:
+
+	/** 判断玩家是否处于死亡状态 */
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category = Health,ReplicatedUsing = OnRep_Dying)
+	uint32 bIsDying : 1;
+
+	/** 在客户端复制死亡 */
+	UFUNCTION()
+	void OnRep_Dying();
 
 protected:
 
@@ -73,6 +95,14 @@ protected:
 	/* 必须施加在底盘上的最小法向力，以产生撞击效果 */
 	UPROPERTY(EditAnywhere, Category = Effects)
 		float ImpactEffectNormalForceThreshold;
+
+	/** 角色爆炸特效 */
+	UPROPERTY(Category = Effects,EditDefaultsOnly)
+	UParticleSystem* DeathFX;
+
+	/** 角色爆炸音乐 */
+	UPROPERTY(Category = Effects, EditDefaultsOnly)
+	USoundCue* DeathSound;
 
 protected:
 
